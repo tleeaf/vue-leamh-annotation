@@ -1,75 +1,37 @@
 <template>
-    <form class="grid gap-3 items-center my-5 border-2 border-gray-300 rounded-lg p-3 shadow-md">
-        <div class="flex gap-5">
+    <h1 class="font-bold text-3xl my-10 text-center">Chunk Annotation</h1>
+    <div class="flex justify-between">
+        <Button @click="$emit('prevChunk')" class="p-2 border-2 border-gray-300 rounded-lg">Previous Chunk</Button>
+        <Button @click="$emit('nextChunk')" class="p-2 border-2 border-gray-300 rounded-lg">Next Chunk</Button>
+    </div>
+    <div class="grid gap-10 items-center my-5 border-2 border-gray-300 rounded-lg p-5 shadow-md">
+        <!-- <div class="flex gap-5 justify-between">
             <Button class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use Last Entry</Button>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
-        </div>
-        <div class="flex justify-between">
-            <label for="definition" class="text-lg font-bold pr-5">Definition</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
-            <InputText class="flex-grow" type="text" v-model="currentData.definition" placeholder="Definition" aria-label="Definition"
-                label="Definition" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
-        </div>
-        <div class="flex justify-between">
+        </div> -->
 
-            <label for="partOfSpeech" class="text-lg font-bold pr-5">Part of Speech</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
-            <Select class="flex-grow" v-model="currentData.partOfSpeech" :options="partsOfSpeech" placeholder="Select a Part of Speech"
-                aria-label="Part of Speech" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
-        </div>
-        <div class="flex justify-between">
-            <label for="definition" class="text-lg font-bold pr-5">Definition</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
-            <InputText class="flex-grow" type="text" v-model="currentData.definition" placeholder="Definition" aria-label="Definition"
-                label="Definition" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
-        </div>
-        <div class="flex justify-between">
-            <label for="dictionaryForm" class="text-lg font-bold pr-5">Dictionary Form</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
-            <InputText  class="flex-grow" type="text" v-model="currentData.dictionaryForm" placeholder="Dictionary Form"
-                aria-label="Dictionary Form" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
-        </div>
         <div class="flex justify-between">
             <label for="meaning" class="text-lg font-bold pr-5">Meaning</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
+            <!-- <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
+                Last</Button> -->
             <InputText class="flex-grow" type="text" v-model="currentData.meaning" placeholder="Meaning" aria-label="Meaning" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
+            <!-- <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
+                to All</Button> -->
         </div>
-        <div class="flex justify-between">
-            <label for="formHere" class="text-lg font-bold pr-5">Form Here</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
-            <InputText class="flex-grow" type="text" v-model="currentData.formHere" placeholder="Form Here" aria-label="Form Here" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
-        </div>
+    
         <div class="flex justify-between">
             <label for="notes" class="text-lg font-bold pr-5">Notes</label>
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
-                Last</Button>
+            <!-- <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
+                Last</Button> -->
             <InputText class="flex-grow" type="text" v-model="currentData.notes" placeholder="Notes" aria-label="Notes" />
-            <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
-                to All</Button>
+            <!-- <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
+                to All</Button> -->
         </div>
         <Button @click="generateJSONFile" label="Generate JSON File" icon="pi pi-download"
             class="p-2 border-2 border-gray-300 rounded-lg">Generate JSON
             File</Button>
-    </form>
+    </div>
 </template>
 
 <script lang="ts" setup>
@@ -88,6 +50,7 @@ const props = defineProps<{
         formHere: string;
         notes: string;
     };
+    chunkLength: number;
     generateJSONFile: () => void;
 }>();
 

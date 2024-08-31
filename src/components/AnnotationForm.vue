@@ -1,4 +1,21 @@
 <template>
+    <h1 class="font-bold text-3xl my-10 text-center">Word-by-Word Annotation</h1>
+       <div class="flex justify-between my-5">
+                    <Button @click="$emit('prevWord')" class="p-2 border-2 border-gray-300 rounded-lg">Previous
+                        Word</Button>
+                    <!-- <h1 class="text-3xl font-bold text-center">
+                        {{ arr[currentWordIndex] }}
+                    </h1> -->
+                    <Button @click="$emit('nextWord')" class="p-2 border-2 border-gray-300 rounded-lg">Next
+                        Word</Button>
+                </div>
+                <!-- <div class="flex justify-between my-5" v-if="numberOfInstances > 1">
+                    <Button @click="goToPreviousInstance" class="p-2 border-2 border-gray-300 rounded-lg">Previous '{{
+                        currentWord }}'</Button>
+
+                    <Button @click="goToNextInstance" class="p-2 border-2 border-gray-300 rounded-lg">Next '{{
+                        currentWord }}'</Button>
+                </div> -->
     <div class="grid gap-3 items-center my-5 border-2 border-gray-300 rounded-lg p-3 shadow-md">
         <div class="flex gap-5 justify-between">
             <Button class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use Last (All fields)</Button>
@@ -81,9 +98,14 @@ const props = defineProps<{
         formHere: string;
         notes: string;
     };
+    // currentWordIndex: {
+    //     type: Number,
+    //     required: true
+    // };
+    
     generateJSONFile: () => void;
 }>();
-
+defineEmits(['useLast', 'clearAllFields', 'applyToAllInstances', 'generateJSONFile','nextWord','prevWord']);
 const partsOfSpeech = reactive(['Noun', 'Verb', 'Adjective', 'Adverb', 'Preposition', 'Conjunction', 'Interjection', 'Copula', 'Demonstrative', 'Possessive Pronoun', 'Vocative Particle', 'Negative Conjunct Particle']);
 const { currentData, generateJSONFile } = toRefs(props);
 </script>

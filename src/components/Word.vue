@@ -1,5 +1,5 @@
 <template>
-    <span @click="$emit('selected')" class="px-2 text-lg min-w-0 hover:bg-slate-200" :class=" highlighted? 'bg-purple-600  text-white' : highlightSimilar ? 'bg-purple-200' : ''">{{ word }}</span>
+    <span @click="$emit('selected')" class="grid items-center h-10 px-2 text-lg min-w-0 hover:bg-slate-200" :class=" highlighted? 'bg-purple-600  text-white' : highlightSimilar ? 'bg-purple-200' : ''">{{ word }}</span>
 </template>
 
 <script setup lang="ts">
