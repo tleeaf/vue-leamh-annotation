@@ -1,6 +1,15 @@
-# vue-leamh-annotation
+# Léamh Annotation Editor
 
-This template should help get you started developing with Vue 3 in Vite.
+Léamh Annotation Editor is a tool for annotating Léamh texts. It allows users to create and edit Léamh annotations in a simple and intuitive interface. 
+
+## Features
+
+- Create and edit Léamh annotations in a simple and intuitive interface.
+- Import and export Léamh annotations in JSON format.
+- Word-by-word and chunk-by-chunk annotation modes.
+- Word-by-word annotation mode allows you to highlight similar words and easily copy and paste fields from one instance of a word to another.
+- Progress is saved in the browser's local storage so you can easily continue where you left off.
+- Check a summary of the annotation progress for the text.
 
 ## Recommended IDE Setup
 

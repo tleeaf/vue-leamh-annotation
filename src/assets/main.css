@@ -1,5 +1,9 @@
 @import './base.css';
 
+@font-face{
+  font-family: 'Celtic';
+  src: url('../fonts/Celtic.otf') format('opentype');
+}
 
 #app {
   max-width: 100vw;

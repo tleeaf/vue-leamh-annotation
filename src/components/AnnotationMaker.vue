@@ -1,20 +1,23 @@
 <template>
-    <div class="h-screen w-screen p-24">
-        <h1 class="font-bold text-3xl my-10 text-center">Léamh Annotation Editor</h1>
+    <div class="w-screen px-24 max-h-1/2">
+        <h1 class="my-10 text-3xl font-bold text-center">Léamh Annotation Editor</h1>
         <FileUpload v-if="!text" accept=".txt,.docx,.doc" mode="basic" @upload="handleFileUpload" class="p-2">
         </FileUpload>
         <Menubar v-if="text" :model="menuItems" class="p-2"></Menubar>
-        <main class="flex gap-10 justify-around">
-            <TextDisplay :metadataArr="metadataArr" :mode="mode" :handleSelected="handleSelected"
-                :currentWordIndex="currentWordIndex" :currentData="currentData" :chunkLength="chunkLength" />
+        <main class="flex justify-around gap-10">
+            <TextDisplay :debug="debug" :metadataArr="metadataArr" :mode="mode" :handleSelected="handleSelected"
+                :currentWordIndex="currentWordIndex" :currentData="currentData" :chunkLength="chunkLength" :chunks="chunks" />  
 
             <div class="w-1/2 p-5">
-                <AnnotationForm v-if="mode == 'word'" @prevWord="previous" @nextWord="next" :currentData="currentData"
-                    :generateJSONFile="generateJSONFile" @clearAllFields="clearAllFields"
-                    @applyToAllInstances="applyCurrentToAllInstances" @useLast="useLast"></AnnotationForm>
+                <AnnotationForm v-if="mode == 'word'" @prev-word="previous" @next-word="next" :currentData="currentData"
+                    @clearAllFields="clearAllFields" @apply-to-all-instances="applyCurrentToAllInstances"
+                    @use-last="useLast"></AnnotationForm>
 
-                <ChunkAnnotationForm v-if="mode == 'chunk'" :chunkLength="chunkLength" @prevChunk="prevChunk" @nextChunk="nextChunk" :currentData="currentData"
-                    :generateJSONFile="generateJSONFile" @clearAllFields="clearAllFields"></ChunkAnnotationForm>
+                <ChunkAnnotationForm v-if="mode == 'chunk'" :chunkLength="chunkLength" @prev-chunk="toPrevChunk"
+                    @next-chunk="toNextChunk" :currentChunkData="currentChunkData" @decrease-chunk-length="candidateChunkLength--"
+                    @increase-chunk-length="candidateChunkLength++" @save-chunk="saveChunk" :chunks="chunks" :chunksDefined="chunksDefined"></ChunkAnnotationForm>
+
+                <Review v-if="mode == 'review'" :metadataArr="metadataArr"></Review>
             </div>
 
         </main>
@@ -23,6 +26,7 @@
 
 <script setup lang="ts">
 import TextDisplay from './TextDisplay.vue'
+import Review from './Review.vue'
 import { useStorage } from '@vueuse/core';
 import { ref, reactive, computed } from 'vue'
 import AnnotationForm from './AnnotationForm.vue';
@@ -30,10 +34,31 @@ import FileUpload from 'primevue/fileupload';
 import ChunkAnnotationForm from './ChunkAnnotationForm.vue';
 import Menubar from 'primevue/menubar';
 
+interface Chunk {
+    startIndex: number;
+    length: number;
+    text: string;
+    translation: string;
+    notes: string;
+}
+
+interface Metadata {
+    word: string;
+    id: string;
+    definition: string;
+    partOfSpeech: string;
+    dictionaryForm: string;
+    meaning: string;
+    formHere: string;
+    notes: string;
+}
+
 const menuItems = [
     { label: 'File', icon: 'pi pi-fw pi-file', command: () => { } },
+    { label: 'Review', icon: 'pi pi-w pi-eye', command: () => { mode.value = 'review' } },
     { label: 'Word', icon: 'pi pi-fw pi-pencil', command: () => { mode.value = 'word' } },
     { label: 'Chunk', icon: 'pi pi-fw pi-arrows-h', command: () => { mode.value = 'chunk' } },
+    { label: 'Export', icon: 'pi pi-fw pi-download', command: () => { generateJSONFile() } },
 ];
 const mode = useStorage('mode', ref('word'));
 
@@ -54,98 +79,86 @@ const metadataArr = useStorage('metadataArr', reactive(new Array(numWords.value)
 }))));
 
 const currentData = computed(() => metadataArr.value[currentWordIndex.value]);
-const currentWordIndex = useStorage('currentWordIndex', ref(0));
+// const currentWordIndex = useStorage('currentWordIndex', ref(0));
+const currentWordIndex = ref(0);    
 const currentWord = computed(() => arr[currentWordIndex.value]);
 const instances = computed(() => metadataArr.value.filter(word => word.word == currentWord.value));
 const numberOfInstances = computed(() => instances.value.length);
-const chunkLength = ref(5);
+const candidateChunkLength = ref(5);
+const debug = useStorage('debug', ref(true));
+const chunkLength = computed(() =>{
+    if(chunksDefined.value){
+        return currentChunkData.value.length;
+    }
+    else{
+        return candidateChunkLength.value;
+    }
+});
+const chunks = useStorage('chunks', ref([] as Chunk[]));
+const currentChunkData: Ref<Chunk> = computed(() => {
+   return chunks.value.find(c => c.startIndex == currentWordIndex.value); 
+});
+const chunkStarts = computed(() => chunks.value.map(chunk => chunk.startIndex));
+const chunksDefined = computed(() => chunks.value.reduce((acc, chunk) => acc + chunk.length, 0) >= numWords.value);
+const nextChunk = computed(() => chunks.value.find(c => c.startIndex == currentWordIndex.value + chunkLength.value));
 
-function goToPreviousInstance() {
-    const word = currentWord.value;
-    const index = arr.slice(0, currentWordIndex.value).lastIndexOf(word);
-    if (index != -1) {
-        currentWordIndex.value = index;
-    }
-}
-function goToNextInstance() {
-    const word = currentWord.value;
-    const index = arr.slice(currentWordIndex.value + 1).indexOf(word);
-    if (index != -1) {
-        currentWordIndex.value += index + 1;
-    }
-}
-function next() {
-    currentWordIndex.value++;
-}
-function previous() {
-    currentWordIndex.value--;
-}
-function handleSelected(i: number) {
-    currentWordIndex.value = i;
-}
-function handleFileUpload(e) {
-    const file = e.files[0];
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        if (e.target) {
-            text.value = e.target.result as string;
-        }
-    }
-    reader.readAsText(file);
-}
-function applyCurrentToAllInstances(key) {
-    if (key) {
-        let data = currentData.value;
-        instances.value.forEach(instance => {
-            instance[key] = data[key];
-        });
+function applyCurrentToAllInstances() {
+    if (!currentData.value.dictionaryForm && !currentData.value.meaning && !currentData.value.formHere && !currentData.value.notes) {
+        alert('No data to apply, please fill out the fields first.');
         return;
     }
-    let data = currentData.value;
+    if (!currentData.value.dictionaryForm || !currentData.value.meaning || !currentData.value.formHere || !currentData.value.notes) {
+        alert('Please fill out all fields before applying to all instances.');
+        return;
+    }
+    const confirm = window.confirm('Are you sure you want to apply this data to all instances of this word? This will overwrite any existing data.');
+    if (!confirm) return;
     instances.value.forEach(instance => {
-        instance.definition = data.definition;
-        instance.partOfSpeech = data.partOfSpeech;
-        instance.dictionaryForm = data.dictionaryForm;
-        instance.meaning = data.meaning;
-        instance.formHere = data.formHere;
-        instance.notes = data.notes;
+        instance.definition = currentData.value.definition;
+        instance.dictionaryForm = currentData.value.dictionaryForm;
+        instance.meaning = currentData.value.meaning;
+        instance.formHere = currentData.value.formHere;
+        instance.notes = currentData.value.notes;
     });
 }
 
-function useLast(key) {
-    if (key) {
-        let last = metadataArr.value.slice(0, currentWordIndex.value).lastIndexOf(currentWord.value);
-        currentData.value[key] = last[key];
+function handleSelected(i: number) {
+    currentWordIndex.value = i;
+}
+
+function toNextChunk() {
+    if(!chunksDefined.value){
         return;
     }
-    const index = arr.slice(0, currentWordIndex.value).lastIndexOf(currentWord.value);
-    let last = metadataArr.value[index];
-    if (index != -1) {
-        currentData.value.definition = last.definition;
-        currentData.value.partOfSpeech = last.partOfSpeech;
-        currentData.value.dictionaryForm = last.dictionaryForm;
-        currentData.value.meaning = last.meaning;
-        currentData.value.formHere = last.formHere;
-        currentData.value.notes = last.notes;
+    else{
+        currentWordIndex.value = nextChunk ? nextChunk.value.startIndex : currentWordIndex.value + currentChunkData.value.length;
     }
 }
-
-function clearAllFields() {
-    currentData.value.definition = '';
-    currentData.value.partOfSpeech = 'Noun';
-    currentData.value.dictionaryForm = '';
-    currentData.value.meaning = '';
-    currentData.value.formHere = '';
-    currentData.value.notes = '';
+function toPrevChunk() {
+    if(!chunksDefined.value){
+        return;
+    }
+    else{
+        const prevChunk = chunks.value.find(c => c.startIndex + c.length == currentWordIndex.value);
+        currentWordIndex.value = prevChunk ? prevChunk.startIndex : currentWordIndex.value - currentChunkData.value.length;
+    }
 }
-
-function nextChunk() {
+function saveChunk() {
+    const chunk = {
+        startIndex: currentWordIndex.value,
+        length: arr.values.length + candidateChunkLength.value > numWords.value ? numWords.value - currentWordIndex.value : candidateChunkLength.value,
+        text: arr.slice(currentWordIndex.value, currentWordIndex.value + candidateChunkLength.value).join(' '),
+        translation: '',
+        notes: '' 
+    };
+    chunks.value.push(chunk);
     currentWordIndex.value += chunkLength.value;
+    if(currentWordIndex.value >= numWords.value){
+        alert('Reached end of text.');
+        currentWordIndex.value = 0;
+        return;
+    }
 }
-
-function prevChunk() {
-    currentWordIndex.value -= chunkLength.value;
-}   
 
 function generateJSONFile() {
     const data = metadataArr.value.map(word => ({
@@ -155,7 +168,7 @@ function generateJSONFile() {
         form: word.formHere,
         notes: word.notes
     }));
-    console.log(data);
+    // console.log(data);
     const collatedItems = data.reduce((acc: { [key: string]: any }, item) => {
         // If the id doesn't exist in the accumulator, create an entry
         if (!acc[item.id]) {
@@ -177,7 +190,10 @@ function generateJSONFile() {
 
         return acc;
     }, {});
-    const json = JSON.stringify(Object.values(collatedItems));
+    // console.log(Object.values(collatedItems));
+    const result = Object.values(collatedItems).concat(chunks.value.map(c => ({id:c.text, translation: c.translation, notes: c.notes})));
+    console.log(result);
+    const json = JSON.stringify(result);
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

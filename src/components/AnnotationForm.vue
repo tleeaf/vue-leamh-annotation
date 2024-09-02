@@ -3,9 +3,7 @@
        <div class="flex justify-between my-5">
                     <Button @click="$emit('prevWord')" class="p-2 border-2 border-gray-300 rounded-lg">Previous
                         Word</Button>
-                    <!-- <h1 class="text-3xl font-bold text-center">
-                        {{ arr[currentWordIndex] }}
-                    </h1> -->
+                   
                     <Button @click="$emit('nextWord')" class="p-2 border-2 border-gray-300 rounded-lg">Next
                         Word</Button>
                 </div>
@@ -76,9 +74,7 @@
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
         </div>
-        <Button @click="generateJSONFile" label="Generate JSON File" icon="pi pi-download"
-            class="p-2 border-2 border-gray-300 rounded-lg">Generate JSON
-            File</Button>
+    
     </div>
 </template>
 
@@ -86,6 +82,7 @@
 import { toRefs, reactive, } from "vue";
 import InputText from "primevue/inputtext";
 import Select from "primevue/select";
+import Button from "primevue/button";
 
 const props = defineProps<{
     currentData: {
@@ -105,7 +102,7 @@ const props = defineProps<{
     
     generateJSONFile: () => void;
 }>();
-defineEmits(['useLast', 'clearAllFields', 'applyToAllInstances', 'generateJSONFile','nextWord','prevWord']);
+defineEmits(['useLast', 'clearAllFields', 'applyToAllInstances', 'nextWord','prevWord']);
 const partsOfSpeech = reactive(['Noun', 'Verb', 'Adjective', 'Adverb', 'Preposition', 'Conjunction', 'Interjection', 'Copula', 'Demonstrative', 'Possessive Pronoun', 'Vocative Particle', 'Negative Conjunct Particle']);
 const { currentData, generateJSONFile } = toRefs(props);
 </script>
