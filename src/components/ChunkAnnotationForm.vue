@@ -35,18 +35,15 @@ import ChunkDefinition from './ChunkDefinition.vue'
 import Button from "primevue/button";
 import { toRefs, } from "vue";
 import InputText from "primevue/inputtext";
+import type { Chunk } from "@/types/Types";
 
-const props = defineProps<{
-    currentChunkData: {
-        startIndex: number;
-        length: number;
-        translation: string;
-        notes: string;
-    };
-    chunkLength: number;
+interface Props {
+    currentChunkData: Chunk;
     chunksDefined: boolean;
     chunks: Chunk[];
-}>();
+}
+
+const props = defineProps<Props>()
 
 const { currentChunkData } = toRefs(props);
 </script>

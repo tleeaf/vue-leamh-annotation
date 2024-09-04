@@ -11,12 +11,15 @@
     "test:e2e": "start-server-and-test preview http://localhost:4173 'cypress run --e2e'",
     "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
     "build-only": "vite build",
-    "type-check": "vue-tsc --build --force"
+    "type-check": "vue-tsc --build --force",
+    "deploy": "gh-pages -d dist",
+    "predeploy": "npm run build"
   },
   "dependencies": {
     "@coleqiu/vue-drag-select": "^2.0.6-beta.1",
     "@primevue/themes": "^4.0.5",
     "@vueuse/core": "^11.0.3",
+    "mammoth": "^1.8.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.0.5",
     "vue": "^3.4.29"
@@ -31,6 +34,7 @@
     "@vue/tsconfig": "^0.5.1",
     "autoprefixer": "^10.4.20",
     "cypress": "^13.12.0",
+    "gh-pages": "^6.1.1",
     "jsdom": "^24.1.0",
     "npm-run-all2": "^6.2.0",
     "postcss": "^8.4.41",

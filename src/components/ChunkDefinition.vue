@@ -31,8 +31,8 @@
 <script lang="ts" setup>
 import { toRefs } from "vue";
 import Button from "primevue/button";
-import type { Chunk } from "./AnnotationMaker.vue";
 import ScrollPanel from "primevue/scrollpanel";
+import type { Chunk } from "@/types/Types";
 
 const props = defineProps<{
     chunksDefined: boolean;

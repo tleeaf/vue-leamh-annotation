@@ -1,26 +1,44 @@
 <template>
     <div class="w-screen px-24 max-h-1/2">
         <h1 class="my-10 text-3xl font-bold text-center">Léamh Annotation Editor</h1>
-        <FileUpload v-if="!text" accept=".txt,.docx,.doc" mode="basic" @upload="handleFileUpload" class="p-2">
-        </FileUpload>
-        <Menubar v-if="text" :model="menuItems" class="p-2"></Menubar>
-        <main class="flex justify-around gap-10">
-            <TextDisplay :debug="debug" :metadataArr="metadataArr" :mode="mode" :handleSelected="handleSelected"
-                :currentWordIndex="currentWordIndex" :currentData="currentData" :chunkLength="chunkLength" :chunks="chunks" />  
-
-            <div class="w-1/2 p-5">
-                <AnnotationForm v-if="mode == 'word'" @prev-word="previous" @next-word="next" :currentData="currentData"
-                    @clearAllFields="clearAllFields" @apply-to-all-instances="applyCurrentToAllInstances"
-                    @use-last="useLast"></AnnotationForm>
-
-                <ChunkAnnotationForm v-if="mode == 'chunk'" :chunkLength="chunkLength" @prev-chunk="toPrevChunk"
-                    @next-chunk="toNextChunk" :currentChunkData="currentChunkData" @decrease-chunk-length="candidateChunkLength--"
-                    @increase-chunk-length="candidateChunkLength++" @save-chunk="saveChunk" :chunks="chunks" :chunksDefined="chunksDefined"></ChunkAnnotationForm>
-
-                <Review v-if="mode == 'review'" :metadataArr="metadataArr"></Review>
+        <div v-if="!text" class="h-screen text-center">
+            <div class="flex flex-col gap-5 mx-auto my-10 text-xl w-96">
+                <h2 class="text-2xl font-bold">Introduction</h2>
+                <p>Léamh Annotation Editor is a tool for preparing and editing annotations for <a
+                        href="https://leamh.org" class="font-bold text-blue-500 blue-500">leamh.org</a></p>
+                <h2 class="text-2xl font-bold">How to use this tool:</h2>
+                <p>1. Upload a text file (.txt, .docx, .doc). Indicate whether this is original plain text or an
+                    existing leamh annotation file.</p>
+                <p>2. Select the mode you want to use (Word, Chunk, or Review)</p>
+                <p>3. Start annotating!</p>
             </div>
+            <FileUpload accept=".txt,.docx,.doc,.rtf" mode="basic" class="p-2" :customUpload="true"
+                @select="handleFileUpload">
+            </FileUpload>
+            <!-- <Button @click="console.log(text)" icon="pi pi-upload" label="Upload"></Button> -->
+        </div>
+        <div v-else>
+            <Menubar v-if="text" :model="menuItems" class="p-2"></Menubar>
+            <main class="flex justify-around gap-10">
+                <TextDisplay :words="arr" :debug="debug" :metadataArr="metadataArr" :mode="mode"
+                    :handleSelected="handleSelected" :currentWordIndex="currentWordIndex" :currentData="currentData"
+                    :chunkLength="chunkLength" :chunks="chunks"> </TextDisplay>
 
-        </main>
+                <div class="w-1/2 p-5">
+                    <AnnotationForm v-if="mode == 'word'" @prev-word="previous" @next-word="next"
+                        :currentData="currentData" @clear-all-fields="clearAllFields"
+                        @apply-to-all-instances="applyCurrentToAllInstances" @use-last="useLast"></AnnotationForm>
+
+                    <ChunkAnnotationForm v-if="mode == 'chunk'" @prev-chunk="toPrevChunk" @next-chunk="toNextChunk"
+                        :currentChunkData="currentChunkData" @decrease-chunk-length="candidateChunkLength--"
+                        @increase-chunk-length="candidateChunkLength++" @save-chunk="saveChunk" :chunks="chunks"
+                        :chunksDefined="chunksDefined"></ChunkAnnotationForm>
+
+                    <Review v-if="mode == 'review'" :metadataArr="metadataArr"></Review>
+                </div>
+
+            </main>
+        </div>
     </div>
 </template>
 
@@ -33,25 +51,8 @@ import AnnotationForm from './AnnotationForm.vue';
 import FileUpload from 'primevue/fileupload';
 import ChunkAnnotationForm from './ChunkAnnotationForm.vue';
 import Menubar from 'primevue/menubar';
-
-interface Chunk {
-    startIndex: number;
-    length: number;
-    text: string;
-    translation: string;
-    notes: string;
-}
-
-interface Metadata {
-    word: string;
-    id: string;
-    definition: string;
-    partOfSpeech: string;
-    dictionaryForm: string;
-    meaning: string;
-    formHere: string;
-    notes: string;
-}
+import type { Chunk, Metadata } from '../types/Types';
+import * as mammoth from 'mammoth';
 
 const menuItems = [
     { label: 'File', icon: 'pi pi-fw pi-file', command: () => { } },
@@ -62,46 +63,118 @@ const menuItems = [
 ];
 const mode = useStorage('mode', ref('word'));
 
-const text = ref('Is ann sin do thrialladar tar a n-ais, 7 ní haithristear a n-eachtra nó a n-imtheachta go rángadar mar a raibh fiana Éireann, 7 an uair do-chonncadar Bodach an Chóta Lachtna ar an inneall 7 ar an ordughadh-sin a raibh sé, ní raibh duine aca nach raibh iongnadh aige a shamhail do dhuine d’fhaicsin, óir ní fhacadar a shamhail a-riamh roimhe, 7 budh lúthgháireach lánmheanmnach leó Fionn do theacht tar ais. Is ann sin do tháinig Caol an Iarainn do láthair Fhinn, 7 d’fhiafraigh dhe an dtug leis an fear do rithfeadh ris féin. D’innis Fionn dho go dtug, 7 go raibh sé ar an láthair-sin aige, 7 do thaisbéin sé an Bodach do Chaol an Iarainn 7 iar bhfaicsin Bodaigh an Chóta Lachtna don ghaisgeadhach dob iongnadh adhbhal 7 budh machtna meanman leis a shamhail d’fhaicsin, 7 a-dubhairt nach rachadh féin do chommóradh gaisgidh nó reatha lena shamhail do bhodach smearaighthe ghránna choidhche. Arna chlos sin don bhodach do-rinne glafar garbhgháire 7 a-dubhairt re Caol an Iarainn: ‘A-tá tú meallta dom thaoibh-se a ghaisgidhigh,’ ar sé, ‘óir ní mé an duine shaoileas tú do bheith agad, 7 do-ghéabha tú cruthadh fírinneach mo ghlóir-se sul dtí tráthnóna ᾽márach, 7 tabhair sgéala damhsa céard é fad na sgríbe is mian leat do chur romhad dochum reatha, 7 mur siubhla mise an tslighe-sin leatsa is cosmhail gur leat breith do ghill; mar an gcéadna, má tá go mbeidh geall reatha agamsa uaitse, is deimhin gurab ortsa caill do ghill.’ ‘Táim sásda go leór,’ ar Caol an Iarainn, ‘ara labhrann tú, acht ní háil liom níos lugha ná trí fichid míle do bhealach a bheith do sgríb reatha againn.’ ‘Is maith mar a-tá,’ ar Bodach an Chóta Lachtna, ‘trí fichid míle go cinnte ó Shliabh Luachra na Mumhan go Binn Éadair, 7 mur bhfaice tusa go rithfe mise an tslighe-sin leatsa, 7 tuilleadh más í do thoil é, is leatsa breith do ghill gan imreas.');
-const numWords = computed(() => text.value.split(' ').length);
-const arr = text.value.split(' ').map(word => word == '7' ? '⁊' : word)
+// const text = ref('Is ann sin do thrialladar tar a n-ais, 7 ní haithristear a n-eachtra nó a n-imtheachta go rángadar mar a raibh fiana Éireann, 7 an uair do-chonncadar Bodach an Chóta Lachtna ar an inneall 7 ar an ordughadh-sin a raibh sé, ní raibh duine aca nach raibh iongnadh aige a shamhail do dhuine d’fhaicsin, óir ní fhacadar a shamhail a-riamh roimhe, 7 budh lúthgháireach lánmheanmnach leó Fionn do theacht tar ais. Is ann sin do tháinig Caol an Iarainn do láthair Fhinn, 7 d’fhiafraigh dhe an dtug leis an fear do rithfeadh ris féin. D’innis Fionn dho go dtug, 7 go raibh sé ar an láthair-sin aige, 7 do thaisbéin sé an Bodach do Chaol an Iarainn 7 iar bhfaicsin Bodaigh an Chóta Lachtna don ghaisgeadhach dob iongnadh adhbhal 7 budh machtna meanman leis a shamhail d’fhaicsin, 7 a-dubhairt nach rachadh féin do chommóradh gaisgidh nó reatha lena shamhail do bhodach smearaighthe ghránna choidhche. Arna chlos sin don bhodach do-rinne glafar garbhgháire 7 a-dubhairt re Caol an Iarainn: ‘A-tá tú meallta dom thaoibh-se a ghaisgidhigh,’ ar sé, ‘óir ní mé an duine shaoileas tú do bheith agad, 7 do-ghéabha tú cruthadh fírinneach mo ghlóir-se sul dtí tráthnóna ᾽márach, 7 tabhair sgéala damhsa céard é fad na sgríbe is mian leat do chur romhad dochum reatha, 7 mur siubhla mise an tslighe-sin leatsa is cosmhail gur leat breith do ghill; mar an gcéadna, má tá go mbeidh geall reatha agamsa uaitse, is deimhin gurab ortsa caill do ghill.’ ‘Táim sásda go leór,’ ar Caol an Iarainn, ‘ara labhrann tú, acht ní háil liom níos lugha ná trí fichid míle do bhealach a bheith do sgríb reatha againn.’ ‘Is maith mar a-tá,’ ar Bodach an Chóta Lachtna, ‘trí fichid míle go cinnte ó Shliabh Luachra na Mumhan go Binn Éadair, 7 mur bhfaice tusa go rithfe mise an tslighe-sin leatsa, 7 tuilleadh más í do thoil é, is leatsa breith do ghill gan imreas.');
+const text = ref('')
+const arr = computed(() => text.value.replaceAll('7', '⁊').split(/[ \n]+/).filter(word => word.length > 0));
+const numWords = computed(() => arr.value.length);
 // .map(word => word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')); 
 
-const metadataArr = useStorage('metadataArr', reactive(new Array(numWords.value).fill(0).map((_, i) => ({
-    word: arr[i],
-    id: arr[i],
-    definition: '',
-    partOfSpeech: 'Noun',
-    dictionaryForm: '',
-    meaning: '',
-    formHere: '',
-    notes: ''
-}))));
+let metadataArr = reactive([] as Metadata[]);
 
-const currentData = computed(() => metadataArr.value[currentWordIndex.value]);
+const currentData = computed(() => metadataArr[currentWordIndex.value]);
 // const currentWordIndex = useStorage('currentWordIndex', ref(0));
-const currentWordIndex = ref(0);    
+const currentWordIndex = ref(0);
 const currentWord = computed(() => arr[currentWordIndex.value]);
 const instances = computed(() => metadataArr.value.filter(word => word.word == currentWord.value));
 const numberOfInstances = computed(() => instances.value.length);
 const candidateChunkLength = ref(5);
 const debug = useStorage('debug', ref(true));
-const chunkLength = computed(() =>{
-    if(chunksDefined.value){
-        return currentChunkData.value.length;
+const chunkLength = computed(() => {
+    if (mode.value == 'chunk' && chunksDefined.value) {
+        return currentChunkData.value?.length;
     }
-    else{
+    else {
         return candidateChunkLength.value;
     }
 });
 const chunks = useStorage('chunks', ref([] as Chunk[]));
-const currentChunkData: Ref<Chunk> = computed(() => {
-   return chunks.value.find(c => c.startIndex == currentWordIndex.value); 
+const currentChunkData = computed(() => {
+    return chunks.value.find(c => c.startIndex == currentWordIndex.value) as Chunk;
 });
 const chunkStarts = computed(() => chunks.value.map(chunk => chunk.startIndex));
 const chunksDefined = computed(() => chunks.value.reduce((acc, chunk) => acc + chunk.length, 0) >= numWords.value);
-const nextChunk = computed(() => chunks.value.find(c => c.startIndex == currentWordIndex.value + chunkLength.value));
+const nextChunk = computed(() => chunks.value.find(c => c.startIndex == currentWordIndex.value + (chunkLength.value ?? 0)));
 
+function handleFileUpload(e: any) {
+    const file = e.files[0];
+    const extension = file.name.split('.').pop();
+    console.log(extension);
+    if (extension == 'docx') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (e.target) {
+                mammoth.extractRawText({ arrayBuffer: e.target.result })
+                    .then((result) => {
+                        text.value = result.value;
+                        metadataArr = arr.value.map(word => ({ word, definition: '', partOfSpeech: 'Noun', dictionaryForm: '', meaning: '', formHere: '', notes: '' }));
+                    })
+                    .catch((err) => {
+                        console.log(err);
+                    });
+            }
+        }
+        reader.readAsArrayBuffer(file);
+    }
+    else if (extension == 'txt') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            if (e.target) {
+                text.value = e.target.result as string;
+            }
+        }
+        reader.readAsText(file);
+    }
+    else if (extension == 'doc') {
+        alert('Please convert the file to .docx format before uploading.');
+    }
+    else {
+        alert('Unsupported file format. Please upload a .txt or .docx file.');
+    }
+}
+function useLast(key?: keyof Metadata) {
+    const index = metadataArr.value
+        .slice(0, currentWordIndex.value)
+        .reverse()
+        .findIndex((obj) => obj.word === currentWord.value);
+
+    if (index === -1) return;
+
+    const last = metadataArr.value[metadataArr.value.length - 1 - index];
+
+    if (key) {
+        currentData.value[key] = last[key];
+    } else {
+        currentData.value = { ...currentData.value, ...last };
+    }
+}
+function clearAllFields() {
+    currentData.value.definition = '';
+    currentData.value.partOfSpeech = 'Noun';
+    currentData.value.dictionaryForm = '';
+    currentData.value.meaning = '';
+    currentData.value.formHere = '';
+    currentData.value.notes = '';
+}
+function goToPreviousInstance() {
+    const word = currentWord.value;
+    const index = arr.slice(0, currentWordIndex.value).lastIndexOf(word);
+    if (index != -1) {
+        currentWordIndex.value = index;
+    }
+}
+function goToNextInstance() {
+    const word = currentWord.value;
+    const index = arr.slice(currentWordIndex.value + 1).indexOf(word);
+    if (index != -1) {
+        currentWordIndex.value += index + 1;
+    }
+}
+function next() {
+    currentWordIndex.value++;
+}
+function previous() {
+    currentWordIndex.value--;
+}
 function applyCurrentToAllInstances() {
     if (!currentData.value.dictionaryForm && !currentData.value.meaning && !currentData.value.formHere && !currentData.value.notes) {
         alert('No data to apply, please fill out the fields first.');
@@ -127,20 +200,20 @@ function handleSelected(i: number) {
 }
 
 function toNextChunk() {
-    if(!chunksDefined.value){
+    if (!chunksDefined.value) {
         return;
     }
-    else{
-        currentWordIndex.value = nextChunk ? nextChunk.value.startIndex : currentWordIndex.value + currentChunkData.value.length;
+    else {
+        currentWordIndex.value = (nextChunk ?? { value: { startIndex: currentWordIndex.value } }).value?.startIndex ?? currentWordIndex.value;
     }
 }
 function toPrevChunk() {
-    if(!chunksDefined.value){
+    if (!chunksDefined.value) {
         return;
     }
-    else{
+    else {
         const prevChunk = chunks.value.find(c => c.startIndex + c.length == currentWordIndex.value);
-        currentWordIndex.value = prevChunk ? prevChunk.startIndex : currentWordIndex.value - currentChunkData.value.length;
+        currentWordIndex.value = prevChunk ? prevChunk.startIndex : currentWordIndex.value - (currentChunkData.value?.length ?? 0);
     }
 }
 function saveChunk() {
@@ -149,11 +222,11 @@ function saveChunk() {
         length: arr.values.length + candidateChunkLength.value > numWords.value ? numWords.value - currentWordIndex.value : candidateChunkLength.value,
         text: arr.slice(currentWordIndex.value, currentWordIndex.value + candidateChunkLength.value).join(' '),
         translation: '',
-        notes: '' 
+        notes: ''
     };
     chunks.value.push(chunk);
-    currentWordIndex.value += chunkLength.value;
-    if(currentWordIndex.value >= numWords.value){
+    currentWordIndex.value += candidateChunkLength.value;
+    if (currentWordIndex.value >= numWords.value) {
         alert('Reached end of text.');
         currentWordIndex.value = 0;
         return;
@@ -184,14 +257,14 @@ function generateJSONFile() {
         // Push each value into the corresponding array
         for (let key in item) {
             if (key !== 'id') {
-                acc[item.id][key as keyof typeof item].push(item[key]);
+                acc[item.id][key as keyof typeof item].push(item as any);
             }
         }
 
         return acc;
     }, {});
     // console.log(Object.values(collatedItems));
-    const result = Object.values(collatedItems).concat(chunks.value.map(c => ({id:c.text, translation: c.translation, notes: c.notes})));
+    const result = Object.values(collatedItems).concat(chunks.value.map(c => ({ id: c.text, translation: c.translation, notes: c.notes })));
     console.log(result);
     const json = JSON.stringify(result);
     const blob = new Blob([json], { type: 'application/json' });
