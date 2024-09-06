@@ -42,7 +42,7 @@
         </div>
       -->
         <div class="flex justify-between">
-            <label for="dictionaryForm" class="pr-5 text-lg font-bold">Dictionary Form</label>
+            <label for="dictionaryForm" class="pr-5 text-lg font-bold">Form Here</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
                 Last</Button>
             <InputText  class="flex-grow" type="text" v-model="currentData.dictionaryForm" placeholder="Dictionary Form"

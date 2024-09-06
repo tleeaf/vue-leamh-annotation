@@ -67,9 +67,8 @@ const menuItems = [
 ];
 const mode = useStorage('mode', ref('word'));
 
-// const text = ref('Is ann sin do thrialladar tar a n-ais, 7 ní haithristear a n-eachtra nó a n-imtheachta go rángadar mar a raibh fiana Éireann, 7 an uair do-chonncadar Bodach an Chóta Lachtna ar an inneall 7 ar an ordughadh-sin a raibh sé, ní raibh duine aca nach raibh iongnadh aige a shamhail do dhuine d’fhaicsin, óir ní fhacadar a shamhail a-riamh roimhe, 7 budh lúthgháireach lánmheanmnach leó Fionn do theacht tar ais. Is ann sin do tháinig Caol an Iarainn do láthair Fhinn, 7 d’fhiafraigh dhe an dtug leis an fear do rithfeadh ris féin. D’innis Fionn dho go dtug, 7 go raibh sé ar an láthair-sin aige, 7 do thaisbéin sé an Bodach do Chaol an Iarainn 7 iar bhfaicsin Bodaigh an Chóta Lachtna don ghaisgeadhach dob iongnadh adhbhal 7 budh machtna meanman leis a shamhail d’fhaicsin, 7 a-dubhairt nach rachadh féin do chommóradh gaisgidh nó reatha lena shamhail do bhodach smearaighthe ghránna choidhche. Arna chlos sin don bhodach do-rinne glafar garbhgháire 7 a-dubhairt re Caol an Iarainn: ‘A-tá tú meallta dom thaoibh-se a ghaisgidhigh,’ ar sé, ‘óir ní mé an duine shaoileas tú do bheith agad, 7 do-ghéabha tú cruthadh fírinneach mo ghlóir-se sul dtí tráthnóna ᾽márach, 7 tabhair sgéala damhsa céard é fad na sgríbe is mian leat do chur romhad dochum reatha, 7 mur siubhla mise an tslighe-sin leatsa is cosmhail gur leat breith do ghill; mar an gcéadna, má tá go mbeidh geall reatha agamsa uaitse, is deimhin gurab ortsa caill do ghill.’ ‘Táim sásda go leór,’ ar Caol an Iarainn, ‘ara labhrann tú, acht ní háil liom níos lugha ná trí fichid míle do bhealach a bheith do sgríb reatha againn.’ ‘Is maith mar a-tá,’ ar Bodach an Chóta Lachtna, ‘trí fichid míle go cinnte ó Shliabh Luachra na Mumhan go Binn Éadair, 7 mur bhfaice tusa go rithfe mise an tslighe-sin leatsa, 7 tuilleadh más í do thoil é, is leatsa breith do ghill gan imreas.');
 const text = ref('')
-const arr = computed<string[]>(() => text.value.split(/[ \n]+/).filter((word: string) => word.length > 0));
+const arr = computed<string[]>(() => text.value.split(/[ \n]+/).filter((word: string) => word.length > 0).map(w => w === '7' ? '⁊' : w));
 const numWords = computed(() => arr.value.length);
 // .map(word => word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')); 
 
@@ -111,7 +110,7 @@ function sortMetadata() {
     //sort metadataArr based on order in arr
     for (let i = 0; i < arr.value.length; i++) {
         const word = arr.value[i];
-        const index = metadataArr.findIndex((item,ind) => item.word === word && ind > i);
+        const index = metadataArr.findIndex((item, ind) => item.word === word && ind > i);
         if (index !== -1 && index !== i) {
             const temp = metadataArr[i];
             metadataArr[i] = metadataArr[index];
@@ -137,29 +136,18 @@ function selectAnnotationFile() {
                 if (!item.notes) return
                 // For each word and its metadata, distribute over all instances
                 const notes = item.notes;
-                if (notes.constructor === Array) {
-                    // Assuming occurrences array holds the number of word instances
-                    for (let i = 0; i < notes.length; i++) {
-                        const instanceMetadata = {
-                            word: item.id,
-                            notes: notes[i],
-                            dictionaryForm: item.dictionary,
-                            form: item.form[i],
-                        };
-                        mArr.push(instanceMetadata);
-                    }
-                }
-                else {
+                // Assuming occurrences array holds the number of word instances
+                for (let i = 0; i < notes.length; i++) {
                     const instanceMetadata = {
                         word: item.id,
-                        notes: notes
+                        notes: Array.isArray(item.notes) ? item.notes[i] : item.notes,
+                        dictionaryForm: item.dictionary,
+                        form: Array.isArray(item.form) ? item.form[i] : item.form,
                     };
-
                     mArr.push(instanceMetadata);
                 }
-
             });
-            
+
             metadataArr = mArr;
             sortMetadata();
         };
