@@ -55,7 +55,11 @@ import type { Chunk, Metadata } from '../types/Types';
 import * as mammoth from 'mammoth';
 
 const menuItems = [
-    { label: 'File', icon: 'pi pi-fw pi-file', command: () => { } },
+    {
+        label: 'File', icon: 'pi pi-fw pi-file', items: [
+            { label: 'Upload Annotation File', icon: 'pi pi-fw pi-upload', command: () => { selectAnnotationFile() } },
+        ]
+    },
     { label: 'Review', icon: 'pi pi-w pi-eye', command: () => { mode.value = 'review' } },
     { label: 'Word', icon: 'pi pi-fw pi-pencil', command: () => { mode.value = 'word' } },
     { label: 'Chunk', icon: 'pi pi-fw pi-arrows-h', command: () => { mode.value = 'chunk' } },
@@ -65,17 +69,17 @@ const mode = useStorage('mode', ref('word'));
 
 // const text = ref('Is ann sin do thrialladar tar a n-ais, 7 ní haithristear a n-eachtra nó a n-imtheachta go rángadar mar a raibh fiana Éireann, 7 an uair do-chonncadar Bodach an Chóta Lachtna ar an inneall 7 ar an ordughadh-sin a raibh sé, ní raibh duine aca nach raibh iongnadh aige a shamhail do dhuine d’fhaicsin, óir ní fhacadar a shamhail a-riamh roimhe, 7 budh lúthgháireach lánmheanmnach leó Fionn do theacht tar ais. Is ann sin do tháinig Caol an Iarainn do láthair Fhinn, 7 d’fhiafraigh dhe an dtug leis an fear do rithfeadh ris féin. D’innis Fionn dho go dtug, 7 go raibh sé ar an láthair-sin aige, 7 do thaisbéin sé an Bodach do Chaol an Iarainn 7 iar bhfaicsin Bodaigh an Chóta Lachtna don ghaisgeadhach dob iongnadh adhbhal 7 budh machtna meanman leis a shamhail d’fhaicsin, 7 a-dubhairt nach rachadh féin do chommóradh gaisgidh nó reatha lena shamhail do bhodach smearaighthe ghránna choidhche. Arna chlos sin don bhodach do-rinne glafar garbhgháire 7 a-dubhairt re Caol an Iarainn: ‘A-tá tú meallta dom thaoibh-se a ghaisgidhigh,’ ar sé, ‘óir ní mé an duine shaoileas tú do bheith agad, 7 do-ghéabha tú cruthadh fírinneach mo ghlóir-se sul dtí tráthnóna ᾽márach, 7 tabhair sgéala damhsa céard é fad na sgríbe is mian leat do chur romhad dochum reatha, 7 mur siubhla mise an tslighe-sin leatsa is cosmhail gur leat breith do ghill; mar an gcéadna, má tá go mbeidh geall reatha agamsa uaitse, is deimhin gurab ortsa caill do ghill.’ ‘Táim sásda go leór,’ ar Caol an Iarainn, ‘ara labhrann tú, acht ní háil liom níos lugha ná trí fichid míle do bhealach a bheith do sgríb reatha againn.’ ‘Is maith mar a-tá,’ ar Bodach an Chóta Lachtna, ‘trí fichid míle go cinnte ó Shliabh Luachra na Mumhan go Binn Éadair, 7 mur bhfaice tusa go rithfe mise an tslighe-sin leatsa, 7 tuilleadh más í do thoil é, is leatsa breith do ghill gan imreas.');
 const text = ref('')
-const arr = computed(() => text.value.replaceAll('7', '⁊').split(/[ \n]+/).filter(word => word.length > 0));
+const arr = computed<string[]>(() => text.value.split(/[ \n]+/).filter((word: string) => word.length > 0));
 const numWords = computed(() => arr.value.length);
 // .map(word => word.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, '')); 
 
 let metadataArr = reactive([] as Metadata[]);
 
-const currentData = computed(() => metadataArr[currentWordIndex.value]);
 // const currentWordIndex = useStorage('currentWordIndex', ref(0));
 const currentWordIndex = ref(0);
-const currentWord = computed(() => arr[currentWordIndex.value]);
-const instances = computed(() => metadataArr.value.filter(word => word.word == currentWord.value));
+const currentWord = computed(() => text.value.split(/[ \n]+/).filter((word: string) => word.length > 0)[currentWordIndex.value]);
+const instances = computed(() => metadataArr.filter(word => word.word == currentWord.value));
+const currentData = computed(() => metadataArr[currentWordIndex.value]);
 const numberOfInstances = computed(() => instances.value.length);
 const candidateChunkLength = ref(5);
 const debug = useStorage('debug', ref(true));
@@ -95,15 +99,82 @@ const chunkStarts = computed(() => chunks.value.map(chunk => chunk.startIndex));
 const chunksDefined = computed(() => chunks.value.reduce((acc, chunk) => acc + chunk.length, 0) >= numWords.value);
 const nextChunk = computed(() => chunks.value.find(c => c.startIndex == currentWordIndex.value + (chunkLength.value ?? 0)));
 
+function reverseCollation(data) {
+    return data.reduce((acc, item) => {
+        // Use item.id as the key in the resulting object
+        acc[item.id] = item;
+        return acc;
+    }, {});
+}
+
+function sortMetadata() {
+    //sort metadataArr based on order in arr
+    for (let i = 0; i < arr.value.length; i++) {
+        const word = arr.value[i];
+        const index = metadataArr.findIndex((item,ind) => item.word === word && ind > i);
+        if (index !== -1 && index !== i) {
+            const temp = metadataArr[i];
+            metadataArr[i] = metadataArr[index];
+            metadataArr[index] = temp;
+        }
+    }
+}
+
+function selectAnnotationFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt'; // Changed to .json to match the data format
+    input.onchange = (e) => {
+        const file = (e.target as HTMLInputElement).files[0];
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.onload = (e) => {
+            const text = e.target?.result as string;
+            const data = JSON.parse(text);
+            const mArr: any[] = [];
+            console.log(data)
+            data.forEach((item: any) => {
+                if (!item.notes) return
+                // For each word and its metadata, distribute over all instances
+                const notes = item.notes;
+                if (notes.constructor === Array) {
+                    // Assuming occurrences array holds the number of word instances
+                    for (let i = 0; i < notes.length; i++) {
+                        const instanceMetadata = {
+                            word: item.id,
+                            notes: notes[i],
+                            dictionaryForm: item.dictionary,
+                            form: item.form[i],
+                        };
+                        mArr.push(instanceMetadata);
+                    }
+                }
+                else {
+                    const instanceMetadata = {
+                        word: item.id,
+                        notes: notes
+                    };
+
+                    mArr.push(instanceMetadata);
+                }
+
+            });
+            
+            metadataArr = mArr;
+            sortMetadata();
+        };
+    };
+    input.click();
+}
+
 function handleFileUpload(e: any) {
     const file = e.files[0];
     const extension = file.name.split('.').pop();
-    console.log(extension);
     if (extension == 'docx') {
         const reader = new FileReader();
         reader.onload = (e) => {
             if (e.target) {
-                mammoth.extractRawText({ arrayBuffer: e.target.result })
+                mammoth.extractRawText({ arrayBuffer: e.target.result as ArrayBuffer })
                     .then((result) => {
                         text.value = result.value;
                         metadataArr = arr.value.map(word => ({ word, definition: '', partOfSpeech: 'Noun', dictionaryForm: '', meaning: '', formHere: '', notes: '' }));
@@ -120,6 +191,7 @@ function handleFileUpload(e: any) {
         reader.onload = (e) => {
             if (e.target) {
                 text.value = e.target.result as string;
+                metadataArr = arr.value.map(word => ({ word, definition: '', partOfSpeech: 'Noun', dictionaryForm: '', meaning: '', formHere: '', notes: '' }));
             }
         }
         reader.readAsText(file);
@@ -132,19 +204,20 @@ function handleFileUpload(e: any) {
     }
 }
 function useLast(key?: keyof Metadata) {
-    const index = metadataArr.value
+    const index = metadataArr
         .slice(0, currentWordIndex.value)
         .reverse()
         .findIndex((obj) => obj.word === currentWord.value);
 
     if (index === -1) return;
 
-    const last = metadataArr.value[metadataArr.value.length - 1 - index];
+    const last = metadataArr[metadataArr.length - 1 - index];
 
     if (key) {
         currentData.value[key] = last[key];
     } else {
-        currentData.value = { ...currentData.value, ...last };
+        let currentWord = metadataArr[currentWordIndex.value];
+        currentWord = { ...currentData.value, ...last };
     }
 }
 function clearAllFields() {
@@ -155,20 +228,7 @@ function clearAllFields() {
     currentData.value.formHere = '';
     currentData.value.notes = '';
 }
-function goToPreviousInstance() {
-    const word = currentWord.value;
-    const index = arr.slice(0, currentWordIndex.value).lastIndexOf(word);
-    if (index != -1) {
-        currentWordIndex.value = index;
-    }
-}
-function goToNextInstance() {
-    const word = currentWord.value;
-    const index = arr.slice(currentWordIndex.value + 1).indexOf(word);
-    if (index != -1) {
-        currentWordIndex.value += index + 1;
-    }
-}
+
 function next() {
     currentWordIndex.value++;
 }
@@ -219,8 +279,8 @@ function toPrevChunk() {
 function saveChunk() {
     const chunk = {
         startIndex: currentWordIndex.value,
-        length: arr.values.length + candidateChunkLength.value > numWords.value ? numWords.value - currentWordIndex.value : candidateChunkLength.value,
-        text: arr.slice(currentWordIndex.value, currentWordIndex.value + candidateChunkLength.value).join(' '),
+        length: arr.value.length + candidateChunkLength.value > numWords.value ? numWords.value - currentWordIndex.value : candidateChunkLength.value,
+        text: arr.value.slice(currentWordIndex.value, currentWordIndex.value + candidateChunkLength.value).join(' '),
         translation: '',
         notes: ''
     };
@@ -234,7 +294,7 @@ function saveChunk() {
 }
 
 function generateJSONFile() {
-    const data = metadataArr.value.map(word => ({
+    const data = metadataArr.map((word: Metadata) => ({
         id: word.word,
         definition: word.definition,
         dictionary: word.dictionaryForm + ' __' + word.partOfSpeech + '__ ' + word.meaning,
@@ -242,7 +302,7 @@ function generateJSONFile() {
         notes: word.notes
     }));
     // console.log(data);
-    const collatedItems = data.reduce((acc: { [key: string]: any }, item) => {
+    const collatedItems = data.reduce((acc: { [key: string]: any }, item: any) => {
         // If the id doesn't exist in the accumulator, create an entry
         if (!acc[item.id]) {
             acc[item.id] = { id: item.id };

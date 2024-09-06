@@ -12,7 +12,10 @@
     }
   ],
   "compilerOptions": {
-    "module": "NodeNext"
+    "module": "NodeNext",
+    "lib": [
+          "ES2021"
+        ]
   },
   "allowJs": true,
 }

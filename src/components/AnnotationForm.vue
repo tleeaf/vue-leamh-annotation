@@ -30,7 +30,7 @@
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
         </div>
-        <div class="flex justify-between">
+        <!-- <div class="flex justify-between">
 
             <label for="partOfSpeech" class="pr-5 text-lg font-bold">Part of Speech</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
@@ -40,7 +40,7 @@
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
         </div>
-     
+      -->
         <div class="flex justify-between">
             <label for="dictionaryForm" class="pr-5 text-lg font-bold">Dictionary Form</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
@@ -50,22 +50,22 @@
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
         </div>
-        <div class="flex justify-between">
+        <!-- <div class="flex justify-between">
             <label for="meaning" class="pr-5 text-lg font-bold">Meaning</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
                 Last</Button>
             <InputText class="flex-grow" type="text" v-model="currentData.meaning" placeholder="Meaning" aria-label="Meaning" />
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
-        </div>
-        <div class="flex justify-between">
+        </div> -->
+        <!-- <div class="flex justify-between">
             <label for="formHere" class="pr-5 text-lg font-bold">Form Here</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
                 Last</Button>
             <InputText class="flex-grow" type="text" v-model="currentData.formHere" placeholder="Form Here" aria-label="Form Here" />
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Apply
                 to All</Button>
-        </div>
+        </div> -->
         <div class="flex justify-between">
             <label for="notes" class="pr-5 text-lg font-bold">Notes</label>
             <Button @click="$emit('useLast')" class="p-2 border-2 border-gray-300 rounded-lg hover:bg-slate-200">Use
@@ -87,7 +87,6 @@ import Button from "primevue/button";
 const props = defineProps<{
     currentData: {
         word: string;
-        id: string;
         definition: string;
         partOfSpeech: string;
         dictionaryForm: string;
@@ -95,11 +94,6 @@ const props = defineProps<{
         formHere: string;
         notes: string;
     };
-    // currentWordIndex: {
-    //     type: Number,
-    //     required: true
-    // };
-    
 }>();
 defineEmits(['useLast', 'clearAllFields', 'applyToAllInstances', 'prevWord','nextWord']);
 const partsOfSpeech = reactive(['Noun', 'Verb', 'Adjective', 'Adverb', 'Preposition', 'Conjunction', 'Interjection', 'Copula', 'Demonstrative', 'Possessive Pronoun', 'Vocative Particle', 'Negative Conjunct Particle']);
